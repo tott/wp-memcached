@@ -125,7 +125,7 @@ if ( isset( $_REQUEST['memcache'] ) && 'skip' == $_REQUEST['memcache'] ) {
 	function wp_cache_get( $key, $group = '', $force = false ) {
 		global $wp_object_cache;
 		if ( $force === false && isset( $_REQUEST['memcache'] ) && 'wipe-page-cache' == $_REQUEST['memcache'] ) {
-			$wp_object_cache->delete( $key, $group );
+			return $wp_object_cache->delete( $key, $group );
 		}
 		return $wp_object_cache->get( $key, $group, $force );
 	}
