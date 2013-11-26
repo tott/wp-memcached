@@ -55,9 +55,9 @@ function wp_start_default_object_cache() {
 	}
 }
 
-add_action( 'admin_bar_menu', 'wp_cache_action_admin_bar_menu', 101 );
+add_action( 'admin_bar_menu', 'wp_cache_action_admin_bar_menu', 9999 );
 function wp_cache_action_admin_bar_menu() {
-	global $wp_admin_bar;
+	global $wp_admin_bar, $wp_object_cache;
 	if ( !is_site_admin() )
 		return;
 
@@ -65,17 +65,58 @@ function wp_cache_action_admin_bar_menu() {
 		'id' => 'mc',
 		'title' => 'MemCache',
 		'href' => false
-	) );
+		) );
 	$wp_admin_bar->add_menu( array(
 		'parent' => 'mc',
 		'title' => 'skip',
 		'href' => add_query_arg( array( 'memcache' => WP_CACHE_SECRET_KEY_SKIP ) )
-	) );
+		) );
 	$wp_admin_bar->add_menu( array(
 		'parent' => 'mc',
 		'title' => 'wipe',
 		'href' => add_query_arg( array( 'memcache' => WP_CACHE_SECRET_KEY_WIPE ) )
-	) );
+		) );
+	$wp_admin_bar->add_menu( array(
+		'parent' => 'mc',
+		'title' => 'default',
+		'href' => remove_query_arg( array( 'memcache' ) )
+		) );
+	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+		if ( is_callable( array( $wp_object_cache, 'get_mc' ) ) ) {
+			$wp_admin_bar->add_menu( array(
+				'parent' => 'mc',
+				'title' => 'Get:' . $wp_object_cache->stats['get'],
+				'href' => false,
+				) );
+			$wp_admin_bar->add_menu( array(
+				'parent' => 'mc',
+				'title' => 'Set:' . $wp_object_cache->stats['set'],
+				'href' => false,
+				) );
+			$wp_admin_bar->add_menu( array(
+				'parent' => 'mc',
+				'title' => 'Delete:' . $wp_object_cache->stats['delete'],
+				'href' => false,
+				) );
+		} else {
+			$wp_admin_bar->add_menu( array(
+				'parent' => 'mc',
+				'title' => 'Hits:' . $wp_object_cache->cache_hits,
+				'href' => false,
+				) );
+			$wp_admin_bar->add_menu( array(
+				'parent' => 'mc',
+				'title' => 'Misses:' . $wp_object_cache->cache_misses,
+				'href' => false,
+				) );
+		}
+		global $wpdb;
+		$wp_admin_bar->add_menu( array(
+			'parent' => 'mc',
+			'title' => 'Queries:' . $wpdb->num_queries,
+			'href' => false,
+			) );
+	}
 }
 
 // Regular cache when ?memcache=skip
@@ -125,7 +166,7 @@ if ( isset( $_REQUEST['memcache'] ) && 'skip' == $_REQUEST['memcache'] ) {
 	function wp_cache_get( $key, $group = '', $force = false ) {
 		global $wp_object_cache;
 		if ( $force === false && isset( $_REQUEST['memcache'] ) && 'wipe-page-cache' == $_REQUEST['memcache'] ) {
-			return $wp_object_cache->delete( $key, $group );
+			$wp_object_cache->delete( $key, $group );
 		}
 		return $wp_object_cache->get( $key, $group, $force );
 	}
