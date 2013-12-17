@@ -55,7 +55,9 @@ function wp_start_default_object_cache() {
 	}
 }
 
-add_action( 'admin_bar_menu', 'wp_cache_action_admin_bar_menu', 9999 );
+if ( function_exists( 'add_action' ) ) {
+	add_action( 'admin_bar_menu', 'wp_cache_action_admin_bar_menu', 9999 );
+}
 function wp_cache_action_admin_bar_menu() {
 	global $wp_admin_bar, $wp_object_cache;
 	if ( !is_site_admin() )
@@ -67,16 +69,19 @@ function wp_cache_action_admin_bar_menu() {
 		'href' => false
 		) );
 	$wp_admin_bar->add_menu( array(
+		'id' => 'mcskip',
 		'parent' => 'mc',
 		'title' => 'skip',
 		'href' => add_query_arg( array( 'memcache' => WP_CACHE_SECRET_KEY_SKIP ) )
 		) );
 	$wp_admin_bar->add_menu( array(
+		'id' => 'mcwipe',
 		'parent' => 'mc',
 		'title' => 'wipe',
 		'href' => add_query_arg( array( 'memcache' => WP_CACHE_SECRET_KEY_WIPE ) )
 		) );
 	$wp_admin_bar->add_menu( array(
+		'id' => 'mcdefault',
 		'parent' => 'mc',
 		'title' => 'default',
 		'href' => remove_query_arg( array( 'memcache' ) )
@@ -84,36 +89,42 @@ function wp_cache_action_admin_bar_menu() {
 	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 		if ( is_callable( array( $wp_object_cache, 'get_mc' ) ) ) {
 			$wp_admin_bar->add_menu( array(
+				'id' => 'mcget',
 				'parent' => 'mc',
-				'title' => 'Get:' . $wp_object_cache->stats['get'],
+				'title' => 'Get:' . ( isset( $wp_object_cache->stats['get'] ) ? $wp_object_cache->stats['get'] : 0 ),
 				'href' => false,
 				) );
 			$wp_admin_bar->add_menu( array(
+				'id' => 'mcset',
 				'parent' => 'mc',
-				'title' => 'Set:' . $wp_object_cache->stats['set'],
+				'title' => 'Set:' . ( isset( $wp_object_cache->stats['set'] ) ? $wp_object_cache->stats['set'] : 0 ),
 				'href' => false,
 				) );
 			$wp_admin_bar->add_menu( array(
+				'id' => 'mcdelete',
 				'parent' => 'mc',
-				'title' => 'Delete:' . $wp_object_cache->stats['delete'],
+				'title' => 'Delete:' . ( isset( $wp_object_cache->stats['delete'] ) ? $wp_object_cache->stats['delete'] : 0 ),
 				'href' => false,
 				) );
 		} else {
 			$wp_admin_bar->add_menu( array(
+				'id' => 'mchits',
 				'parent' => 'mc',
-				'title' => 'Hits:' . $wp_object_cache->cache_hits,
+				'title' => 'Hits:' . ( isset( $wp_object_cache->cache_hits ) ? $wp_object_cache->cache_hits : 0 ),
 				'href' => false,
 				) );
 			$wp_admin_bar->add_menu( array(
+				'id' => 'mcmisses',
 				'parent' => 'mc',
-				'title' => 'Misses:' . $wp_object_cache->cache_misses,
+				'title' => 'Misses:' . ( isset( $wp_object_cache->cache_misses ) ? $wp_object_cache->cache_misses : 0 ),
 				'href' => false,
 				) );
 		}
 		global $wpdb;
 		$wp_admin_bar->add_menu( array(
+			'id' => 'mcqueries',
 			'parent' => 'mc',
-			'title' => 'Queries:' . $wpdb->num_queries,
+			'title' => 'Queries:' . ( isset( $wpdb->num_queries ) ? $wpdb->num_queries : 0 ),
 			'href' => false,
 			) );
 	}
@@ -166,7 +177,9 @@ if ( isset( $_REQUEST['memcache'] ) && 'skip' == $_REQUEST['memcache'] ) {
 	function wp_cache_get( $key, $group = '', $force = false ) {
 		global $wp_object_cache;
 		if ( $force === false && isset( $_REQUEST['memcache'] ) && 'wipe-page-cache' == $_REQUEST['memcache'] ) {
-			$wp_object_cache->delete( $key, $group );
+			if ( false !== array_search( $group, $wp_object_cache->global_groups ) ) {
+				$wp_object_cache->delete( $key, $group );
+			}
 		}
 		return $wp_object_cache->get( $key, $group, $force );
 	}
@@ -467,9 +480,6 @@ if ( isset( $_REQUEST['memcache'] ) && 'skip' == $_REQUEST['memcache'] ) {
 			print_r( $lines );
 			echo "</pre>\n";
 		}
-
-		if ( $this->debug )
-			var_dump( $this->memcache_debug );
 	}
 
 	function &get_mc( $group ) {
